@@ -16,7 +16,7 @@ timezone: Asia/Shanghai
 
 title: Tsaiyue # the main title
 
-tagline: CS student / Fighting entropy in software  # it will display as the sub-title
+tagline: CS student  # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing.
