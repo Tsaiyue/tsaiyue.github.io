@@ -1,5 +1,5 @@
 ---
-title: Pose-guided Video Generation
+title: Pipeline Parallel
 date: 2024-04-14 14:10:00 +0800
 categories: [AI Infra]
 tags: [HPC]

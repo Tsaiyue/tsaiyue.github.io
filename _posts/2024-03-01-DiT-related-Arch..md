@@ -1,5 +1,5 @@
 ---
-title: DiT
+title: DiT-related-Arch.
 date: 2024-03-01 14:10:00 +0800
 categories: [Architecture, DiT]
 tags: [Large Model]
