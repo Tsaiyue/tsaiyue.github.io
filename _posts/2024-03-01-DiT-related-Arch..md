@@ -5,7 +5,7 @@ categories: [Architecture, DiT]
 tags: [Large Model]
 render_with_liquid: false
 ---
-### DiT related model
+### DiT related model blogging
 
 #### TL, DL: 总结基于Diffusion Transformer相关衍生的的生成模型
 
