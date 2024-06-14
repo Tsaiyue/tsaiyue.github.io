@@ -73,7 +73,7 @@ theme_mode: # [light|dark]
 img_cdn:
 
 # the avatar on sidebar, support local or CORS resources
-avatar: "(https://github.com/Tsaiyue/tsaiyue.github.io/assets/46399096/623ac9f4-0cec-4649-b960-c5d5e1dffce6"
+avatar: "https://github.com/Tsaiyue/tsaiyue.github.io/assets/46399096/9523ee6a-c68e-436f-b82d-b67d595e8e42"
 
 # boolean type, the global switch for TOC in posts.
 toc: true
