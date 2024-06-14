@@ -16,7 +16,7 @@ timezone: Asia/Shanghai
 
 title: Tsaiyue # the main title
 
-tagline: CS student  # it will display as the sub-title
+tagline: A CS student learning AI:)  # it will display as the sub-title
 
 description: >- # used by seo meta and the atom feed
   A minimal, responsive and feature-rich Jekyll theme for technical writing.
@@ -73,7 +73,7 @@ theme_mode: # [light|dark]
 img_cdn:
 
 # the avatar on sidebar, support local or CORS resources
-avatar:
+avatar: "https://github.com/Tsaiyue/tsaiyue.github.io/assets/46399096/8e578bdf-96ec-4300-9a1e-867b6666bb69"
 
 # boolean type, the global switch for TOC in posts.
 toc: true
