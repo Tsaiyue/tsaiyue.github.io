@@ -5,13 +5,13 @@ categories: [Architecture, DiT]
 tags: [Large Model]
 render_with_liquid: false
 ---
-### DiT related model blogging
+### **DiT related model blogging**
 
 #### TL, DL: 总结基于Diffusion Transformer相关衍生的的生成模型
 
-### 1 DiT (Scalable Diffusion Models with Transformers)
+### **1 DiT (Scalable Diffusion Models with Transformers)**
 
-##### - 技术重点：
+##### **- 技术重点：**
 
 - 将**Diffusion** model的UNET架构修改为**Transformer**架构，以获取更强大的性能以及扩展能力；
 
@@ -42,7 +42,7 @@ render_with_liquid: false
 
 - **scaling anlysis:** 相较于UNET架构，Transformer的扩展性更强，作者对扩展模型规模对模型精度的影响进行一定程度的验证，证明在生成模型上Diffusion Transformer也符合scaling law，分别从宽度和长度对scalibity进行验证，通过减少patch_size(增大序列长度，降低注意力计算的粒度)，增加DiT blocks，num_head, Hidden size将有利于提升模型准确度。 
 
-##### - torch实现
+##### **- torch实现**
 
 ```python
 def modulate(x, shift, scale):
@@ -72,7 +72,7 @@ class DiTBlock(nn.Module):
         return x
 ```
 
-##### - 参考：
+##### **- 参考：**
 
 - [1] https://github.com/facebookresearch/DiT
 
@@ -80,9 +80,9 @@ class DiTBlock(nn.Module):
 
 - [3] [Scalable Diffusion Models with Transformers](https://www.wpeebles.com/DiT)
 
-### 2 Latte（Latte: Latent Diffusion Transformer for Video Generation[1]）
+### ** Latte（Latte: Latent Diffusion Transformer for Video Generation[1]）**
 
-##### - 技术重点：
+##### **- 技术重点：**
 
 - 提出DiT中Transformer block的四种变种，分别为spatial-tempral attention交替；先3个spatial后三个temporal；两个MHA(multi-head attention)依次处理spatial和temperal；在MHA中采取并行策略处理两种信息；
   
@@ -130,7 +130,7 @@ class DiTBlock(nn.Module):
 
 - 对比位置编码的具体形式，包含嵌入不同周期三角函数的绝对编码和如旋转位置编码(RoPE)的相对位置编码，前者包含patch位于整个序列的位置和时序信息，后者包含patch间的相对位置信息；
 
-##### - 讨论：
+##### **- 讨论：**
 
 - 关于DiT变种的选择，实验结果表明第一种变种，即spatail-temporal交替方式较好；第二变种由于temporal相关处理位于sptial之后，使spatial的相关权重依赖于temporal(反向传播)，导致spatial相关信息较难学习；对于第四种变体，其计算量(FLOPs)相较于其他变种更小，故其效果差于其他;
 
@@ -140,7 +140,7 @@ class DiTBlock(nn.Module):
 
 - Latte同样试图验证scaling law，实验中最高参数量扩展到0.67B。
 
-##### - 参考：
+##### **- 参考：**
 
 - [1] https://arxiv.org/abs/2401.03048
 
@@ -148,13 +148,13 @@ class DiTBlock(nn.Module):
 
 - [3] https://arxiv.org/abs/2103.15691
 
-### 3 Pixart family
+### **3 Pixart family**
 
-##### Pixart-alpha (PIXART-α: FAST TRAINING OF DIFFUSION TRANS-FORMER FOR PHOTOREALISTIC TEXT-TO-IMAGESYNTHESIS [1])
+##### **Pixart-alpha (PIXART-α: FAST TRAINING OF DIFFUSION TRANS-FORMER FOR PHOTOREALISTIC TEXT-TO-IMAGESYNTHESIS [1])**
 
 ##### TL;DR: 提出一种训练高效的基于DiT的t2i模型和训练流程
 
-##### - 技术重点：如何体现训练高效：
+##### **- 技术重点：如何体现训练高效：**
 
 - 三阶段训练流程，分别解决像素依赖、文图对齐以及高质量图像重建，将t2i任务拆解为递进的三个流程；对于第一阶段，基于ImageNet的class-guide数据进行预训练，该阶段避免了文本信息的引入，使模型学习目的更加明确，仅仅针对像素依赖；第二阶段去除类别条件，引入文本embedding并使用CrossAttention进行处理，基于第一阶段预训练权重进行微调；第三阶段使用更高质量的数据进行进一步微调；
 
@@ -177,11 +177,11 @@ class DiTBlock(nn.Module):
 - 组网使用：关于text-encoder使用t5，VAE来源于SD的VAE。
 - 训练trick：借鉴于SDXL[2]采用分桶的策略将不同纵横比(ar)的数据进行分桶训练；简介与DiffFIT[3]中与Position Encoding相关的trick，用于处理训练过程不同分辨率的变化。
 
-##### Pixart-delta (PIXART-δ: FAST AND CONTROLLABLE IMAGEGENERATION WITH LATENT CONSISTENCY MODELS[4])
+##### **Pixart-delta (PIXART-δ: FAST AND CONTROLLABLE IMAGEGENERATION WITH LATENT CONSISTENCY MODELS[4])**
 
 ##### TL, DL: 在Pixart-alpha的基础上分别基于LCM（Latent Consistency Model）和ControlNet提升效率和可控性性；
 
-##### - 技术重点：
+##### **- 技术重点：**
 
 - 关于进一步提升效率：结合LCM[5]，将1024x1024输出时间控制在0.5s，进一步提升训练和推断速度，有利于实时生成；
   
@@ -213,9 +213,9 @@ class DiTBlock(nn.Module):
         </div>
   </center>
 
-##### Pixart-sigma（PixArt-Σ: Weak-to-Strong Training of Diffusion Transformer for 4K Text-to-Image Generation[7]）
+##### **Pixart-sigma（PixArt-Σ: Weak-to-Strong Training of Diffusion Transformer for 4K Text-to-Image Generation[7]）**
 
-##### - 技术重点：
+##### **- 技术重点：**
 
 - 将生成图像分辨率提升到4K，但这会带来一个问题，训练和推断的高效性如何保证，作者借鉴于[8]将注意力机制中的Key和Value进行压缩，使仅增加0.018%的参数量提升训练和推断的速度；具体方式为采用卷积核对Key和Value进行下采样；
   
@@ -247,7 +247,7 @@ class DiTBlock(nn.Module):
 
 - 除此之外，相较于Pixart-alpha，Pixart-sigma将VAE更改为SDXL的VAE，以获取更好的效果。
 
-##### - 参考：
+##### **- 参考：**
 
 - [1] [[2310.00426] PixArt-$α$: Fast Training of Diffusion Transformer for Photorealistic Text-to-Image Synthesis](https://arxiv.org/abs/2310.00426)
 
@@ -265,9 +265,9 @@ class DiTBlock(nn.Module):
 
 - [8] [[2106.13797] PVT v2: Improved Baselines with Pyramid Vision Transformer](https://arxiv.org/abs/2106.13797)
 
-### 4 STDiT (Spatial Temporal DiT)
+### **4 STDiT (Spatial Temporal DiT)**
 
-##### - 技术重点：
+##### **- 技术重点：**
 
 - DiT架构：这是hpcAI/Open-Sora[1]使用的DiT架构，其DiT借鉴于Latte的其中一种变种，即空间和时间注意力交替的方式，相较于3D的attention方式这样参数量较低(模型整体参数量为0.7B, 28 blocks)。其预训练模型采用PixArt-alpha的权重，但由于PixArt-alpha无Temporal Attention，故将这部分权重以0进行初始化；
   
@@ -305,7 +305,7 @@ class DiTBlock(nn.Module):
         </div>
   </center>
 
-##### - 参考：
+##### **- 参考：**
 
 - [1] [GitHub - hpcaitech/Open-Sora: Open-Sora: Democratizing Efficient Video Production for All](https://github.com/hpcaitech/Open-Sora)
 - [2] [[2402.12376] FiT: Flexible Vision Transformer for Diffusion Model](https://arxiv.org/abs/2402.12376)
@@ -314,19 +314,19 @@ class DiTBlock(nn.Module):
 - [5] https://arxiv.org/abs/2403.03206
 - [6] https://huggingface.co/DeepFloyd/t5-v1_1-xxl
 
-### 5 SiT (SiT: Exploring Flow and Diffusion-based Generative Models with Scalable Interpolant Transformers)[WIP]
+### **5 SiT (SiT: Exploring Flow and Diffusion-based Generative Models with Scalable Interpolant Transformers)**[WIP]
 
-##### - 技术重点：
+##### **- 技术重点：**
 
 - 该方法并非改变Transformer 架构，而是对diffusion数学模型进行改进，主要对以下模块进行研究和实验：使用离散或连续时间学习，决定模型学习的目标，选择连接分布的插值，部署确定性或随机采样器。
 
-##### - 参考：
+##### **- 参考：**
 
 - [1] https://arxiv.org/abs/2401.08740
 
-### 6 U-ViT (All are Worth Words: A ViT Backbone for Diffusion Models)
+### **6 U-ViT (All are Worth Words: A ViT Backbone for Diffusion Models)**
 
-##### - 技术重点：
+##### **- 技术重点：**
 
 - 取代U-Net采用Transformer架构构建diffusion blocks，相较于DiT有以下区别，(1) 在Transformer间构造skip-connection (concat the lower feature with the higher one); (2) 不在latent space 上构造tokrn，而是在图像域进行patchify以构造token; (3) 关于条件和timesteps的嵌入，将其作为token一部分，输出再把对应位置的输出去除；
   
@@ -351,15 +351,15 @@ class DiTBlock(nn.Module):
 
 - 对scaling进行的讨论，包括depth(num of transformerblocks), width (hidden_dims)以及patch_size；前两者在一定区间呈现正相关，patch_size在一定区间呈现负相关(low-level对像素精度要求较高)
 
-##### - 参考：
+##### **- 参考：**
 
 - [1] [[2209.12152] All are Worth Words: A ViT Backbone for Diffusion Models](https://arxiv.org/abs/2209.12152)
 
 - [2] [GitHub - baofff/U-ViT: A PyTorch implementation of the paper &quot;All are Worth Words: A ViT Backbone for Diffusion Models&quot;.](https://github.com/baofff/U-ViT)
 
-#### 7 Hunyuan-DiT
+#### **7 Hunyuan-DiT**
 
-##### - 技术重点：
+##### **- 技术重点：**
 
 - 基于diffusion transformer的文生图模型架构, 采用DiT中的Cross Attention做为处理条件的模块；
 
@@ -397,13 +397,13 @@ class DiTBlock(nn.Module):
 
 - 提供了一个数据处理流程Pipeline[对于生成的效果，这也许比模型设计更为重要]。
 
-##### - 讨论：
+##### **- 讨论：**
 
 - 相较于其他只提出t2i / t2v的模型，该论文提出一个multi-turn的AI 系统，结合了图像生成和图像理解；
 
 - 强调了中文理解能力；
 
-##### - 参考：
+##### **- 参考：**
 
 - [1]  [[2405.08748] Hunyuan-DiT: A Powerful Multi-Resolution Diffusion Transformer with Fine-Grained Chinese Understanding](https://arxiv.org/abs/2405.08748)
 

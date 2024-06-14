@@ -39,9 +39,9 @@ render_with_liquid: false
 
 - 训练方式：采用两阶段训练，第一阶段对Pose_guider、Reference_unet以及不包含Temporal Attention的denoising_unet进行训练；第二阶段对denoising_unet的Temporal Attention进行训练；对于static image的选取方式为在生成视频中随机选取一帧。
 
-##### - 讨论：
+##### **- 讨论：**
 
-- 局限性：
+**- 局限性：**
   
   1）对于这种涉及人体动作视频生成的模型，对于视频的内容保真度，最难的地方在于精细的手部以及脸部的保持；
   
@@ -53,11 +53,11 @@ render_with_liquid: false
   
   5）除了模型设计以外，大规模生成模型还需考虑数据的组成，数据质量越高、分布越广泛(如真实人物、卡通人物等)才能泛化到不同的测试用例。
 
-- 开源程度：
+**- 开源程度：**
   
   1）目前MooreThread 对其进行复现[3]，但效果上不急Animate Anyone 官方demo[2]，尽管其在Pose video的生成上添加了脸部的精细化控制。
 
-##### - 参考：
+##### **- 参考：**
 
 - [1] [[2311.17117] Animate Anyone: Consistent and Controllable Image-to-Video Synthesis for Character Animation](https://arxiv.org/abs/2311.17117)
 
@@ -71,7 +71,7 @@ render_with_liquid: false
 
 ### **2 Magic Animate (Temporally Consistent Human Image Animation using Diffusion Model)**
 
-##### - 技术重点
+##### **- 技术重点**
 
 - 生成任务场景与Animate Anyone一致，区别主要为pose video的形式不同，Animate Anyone采用来源于 Open-pose的关键点序列(即动作骨架)，在Magic Animate中任务该关键点过于稀疏，难以有效表征较为复杂的动作，如旋转、翻转等，因此在Magic Animate中采用 Dense-Pose的方式表示Pose video;
 
@@ -100,7 +100,7 @@ render_with_liquid: false
 
 - 关于长视频生成，采用多个短视频拼接的方式进行，但是这会导致每个片段(segment)之间出现时间维度不一致的问题，为了平滑不同片段，采用重叠切分Dense Pose的方式对每个片段进行生成，后将扩散模型预测的噪声在重叠处进行平均以去除重叠部分。
 
-##### - 讨论
+##### **- 讨论：**
 
 - 在模型架构图中没有体现出VAE，而实际上生成模型是在VAE输出的潜在空间进行生成，最后输出也需要由VAE的decoder解码会视频帧；
 
@@ -123,7 +123,7 @@ render_with_liquid: false
     ![image (3)](https://github.com/Tsaiyue/tsaiyue.github.io/assets/46399096/9764ab08-ee7b-4285-9306-86ca7cb3a735)
         
 
-##### - 参考
+##### **- 参考**
 
 - [1] [[2311.16498] MagicAnimate: Temporally Consistent Human Image Animation using Diffusion Model](https://arxiv.org/abs/2311.16498)
 
@@ -133,13 +133,13 @@ render_with_liquid: false
 
 ### **3 UniAnimate (Taming Unified Video Diffusion Models for Consistent Human Image Animation[1])**
 
-##### - 技术重点
+##### **- 技术重点**
 
-- 如名字的前缀Uni，作者希望将静态图像、姿态视频表征到同一空间下，以此实现生成模型仅仅包括各输入的编码块以及生成模型，优点是减小了静态图像或姿态视频分支带来模型参数量的增大，以此降低训练模型的难度；具体如下图，对于参考图像的处理，基于CLIP提取语义特征，并将其融合进生成模型空间注意力模块的计算，除此之外，基于VAE对其编码到潜在空间，并与该参考图像对应的姿态序列关键点进行融合，以此获取参考图像的布局信息；对于姿态视频采用pose-encoder将其编码到潜在空间，并于输入噪声进行拼接（这里有点怪，拼接是在哪个维度进行拼接），后将从参考图像和姿态视频获取而来的特征在时间维度进行堆叠(t->t+1)，以此作为生成模型的输入；对于生成模型，同样采用3D-UNet架构；
+- 如名字的前缀**Uni**，作者希望将静态图像、姿态视频表征到同一空间下，以此实现生成模型仅仅包括各输入的编码块以及生成模型，优点是减小了静态图像或姿态视频分支带来模型参数量的增大，以此降低训练模型的难度；具体如下图，对于参考图像的处理，基于CLIP提取语义特征，并将其融合进生成模型空间注意力模块的计算，除此之外，基于VAE对其编码到潜在空间，并与该参考图像对应的姿态序列关键点进行融合，以此获取参考图像的布局信息；对于姿态视频采用pose-encoder将其编码到潜在空间，并于输入噪声进行拼接（这里有点怪，拼接是在哪个维度进行拼接），后将从参考图像和姿态视频获取而来的特征在时间维度进行堆叠(t->t+1)，以此作为生成模型的输入；对于生成模型，同样采用3D-UNet架构；
 
-- 长视频生成策略：不像Magic Animate中提到的在输出侧采用移动窗口进行处理，在UniAnimate中在输入端实现长视频的生成，具体为采用自回归的方式，即将首帧噪声使用图像进行替代(当然是指图像在潜在空间的表示)，该图像来源于上一个切片的末帧输出图像，参考图像与该条件图像保持一致。
+**- 长视频生成策略：**不像Magic Animate中提到的在输出侧采用移动窗口进行处理，在UniAnimate中在输入端实现长视频的生成，具体为采用自回归的方式，即将首帧噪声使用图像进行替代(当然是指图像在潜在空间的表示)，该图像来源于上一个切片的末帧输出图像，参考图像与该条件图像保持一致。
 
-- 时间一致性的建模：在生成模型中所采用3D-UNet架构中，空间维度的考虑使用空间注意力机制进行处理，而对于时间一致性保持的建模，考虑到基于Transformer-Temporal其计算复杂度与视频帧数呈现二次关系，因此为解决长距离依赖的计算效率问题，作者引进Mamba-Temporal[2][3]模块对齐进行取代，用这种方式对时间一致性进行建模，如上图右侧所示，以此减少训练过程中的显存消耗。
+**- 时间一致性的建模：**在生成模型中所采用3D-UNet架构中，空间维度的考虑使用空间注意力机制进行处理，而对于时间一致性保持的建模，考虑到基于Transformer-Temporal其计算复杂度与视频帧数呈现二次关系，因此为解决长距离依赖的计算效率问题，作者引进Mamba-Temporal[2][3]模块对齐进行取代，用这种方式对时间一致性进行建模，如上图右侧所示，以此减少训练过程中的显存消耗。
   
   <center>
       <img style="border-radius: 0.3125em;
@@ -154,13 +154,13 @@ render_with_liquid: false
         </div>
   </center>
 
-##### - 讨论
+##### **- 讨论**
 
 - 没有提及pose-encoder的具体设计，代码暂未开源，且在输入进生成模型之前进行的融合方式如拼接、求和等较为模糊的操作似乎难以证明这些不同的数据对齐到了同一潜在空间下；
 
 - Mamba带来的计算效率提升显著，但在生成效果上并未全面超过Transformer-Temporal。
 
-##### - 参考
+##### **- 参考**
 
 - [1] [[2406.01188] UniAnimate: Taming Unified Video Diffusion Models for Consistent Human Image Animation](https://arxiv.org/abs/2406.01188)
 - [2] [[2312.00752] Mamba: Linear-Time Sequence Modeling with Selective State Spaces](https://arxiv.org/abs/2312.00752)
@@ -170,6 +170,6 @@ render_with_liquid: false
 
 comming soon......[1]
 
-##### - 参考：
+##### **- 参考：**
 
 - [1] https://github.com/TMElyralab/MusePose/tree/main
