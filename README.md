@@ -8,3 +8,4 @@ https://chirpy.cotes.page/
 ## License
 
 This project is published under [MIT License][license].
+The post article located in './_posts'

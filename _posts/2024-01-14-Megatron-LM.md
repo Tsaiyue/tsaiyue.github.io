@@ -8,11 +8,11 @@ render_with_liquid: false
 
 ### **Megatron-LM related blogging**
 
-#### TL;DR: 针对Transformer设计的模型并行方法，用于高效训练；
+#### TL;DR: 针对**Transformer**设计的模型并行方法，用于高效训练；
 
 #### **解决什么问题：**
 
-- 单卡显存有限，对于数据并行(data parellel)下仍然依赖于将完整模型存储在单卡，无法实现参数、梯度的共享，需要想办法把模型分离到不同计算单元上；
+- 单卡显存有限，对于数据并行(data parellel)下仍然依赖于将完整模型存储在单卡，需要想办法把模型分离到不同计算单元上，进行模型并行(MP)；
 
 - 不改动编译器或底层框架，更好地在用户端兼容Pytorch；
 
@@ -22,9 +22,9 @@ render_with_liquid: false
 
 **- MP 4 MLP**
   
-  在Transformer模型设计中，MLP包含两层线性层以及每层后跟随着激活函数。线性层为矩阵乘法运算GEMM(General Matrix Multiplication)，激活函数按元素(element-wise)运算。
+  在Transformer模型设计中，MLP包含两层线性层以及其中间连接着激活函数。线性层为矩阵乘法运算GEMM(General Matrix Multiplication)，激活函数按元素(element-wise)运算。
   
-  对于两个矩阵乘法的并行包含两种方式：1)左矩阵不切，右矩阵按列切，这样会出现后续通讯需要使用Gather; 2)左矩阵按行切，右矩阵按列切分，这样后续通讯需要使用Reduce;
+  对于两个矩阵乘法的并行包含两种方式：1)左矩阵不切，右矩阵按列切，这样会出现后续通讯需要使用Gather; 2)左矩阵按列切，右矩阵按行切分，这样后续通讯需要使用Reduce;
   
   对于上述两种方法，由于2)需要与激活函数保持同步(非线性变换不满足分配律)，故对于Transformer中实现和激活函数级联的结构，采用1）更有利于提升并行效率(较少同步等待时间，提升scaling efficiency);故对于第一个线性层，保持输入不动(输入数据显存占用相较于参数更小，故在这里考虑对参数进行切分，对输入进行切分就是数据并行了)，参数矩阵按列切分，两个GPU的输出在这时如果要通讯的话采用All_Gather，但是这时候还需要经过一个激活函数和线性层，由于对于第二个线性层的输入按列切分，故第二个线性层的参数采用按行输出的方式，最后再用all_reduce进行整合(前向后向各一次)。
   
@@ -71,7 +71,7 @@ render_with_liquid: false
 
 **- MP 4 self-attention**
   
-  对于多头注意力机制，每个头的输出最终需要按列拼接在一起，而在得到拼接后的结果之后，还需要利用一个线性层对其进行投影，故这时候就跟MP 4 MLP的第二个线性层的情况一致了，只需对线性层参数按照行切分，最终再将每个GPU的输出做All_reduce通讯即可。
+  对于多头注意力机制，每个头的输出最终需要按列拼接在一起，可以将注意力头进行模型并行，而在得到拼接后的结果之后，还需要利用一个线性层对其进行投影，故这时候就跟MP 4 MLP的第二个线性层的情况一致了，只需对线性层参数按照行切分，最终再将每个GPU的输出做All_reduce通讯即可。
   
   <center>
       <img style="border-radius: 0.3125em;
@@ -98,41 +98,41 @@ render_with_liquid: false
   
   ```python
   def forward(self, input_):
-          # Set up backprop all-reduce.
-          input_parallel = copy_to_tensor_model_parallel_region(input_)
-          # Matrix multiply.
-  
-          bias = self.bias if not self.skip_bias_add else None
-          output_parallel = F.linear(input_parallel, self.weight, bias)
-          if self.gather_output:
-              # All-gather across the partitions.
-              output = gather_from_tensor_model_parallel_region(output_parallel)
-          else:
-              output = output_parallel
-          output_bias = self.bias if self.skip_bias_add else None
-          return output, output_bia
+      # Set up backprop all-reduce.
+      input_parallel = copy_to_tensor_model_parallel_region(input_)
+      # Matrix multiply.
+
+      bias = self.bias if not self.skip_bias_add else None
+      output_parallel = F.linear(input_parallel, self.weight, bias)
+      if self.gather_output:
+          # All-gather across the partitions.
+          output = gather_from_tensor_model_parallel_region(output_parallel)
+      else:
+          output = output_parallel
+      output_bias = self.bias if self.skip_bias_add else None
+      return output, output_bia
   ```
   
-  - RowParallelLinear：对应Transformer的第二个线性层，输入按列切分(可根据`self.input_is_parallel` 进行scratter，若对于`ColumnParallelLinear` 输出不进行gather，则在`RowParallelLinear` 不需要scatter)。
+  - RowParallelLinear：对应Transformer的第二个线性层，输入按列切分(可根据`self.input_is_parallel` 进行scratter(切分操作)，若对于`ColumnParallelLinear` 输出不进行gather，则在`RowParallelLinear` 不需要scatter)。
   
   ```python
   def forward(self, input_):
-          # Set up backprop all-reduce.
-          if self.input_is_parallel:
-              input_parallel = input_
-          else:
-              input_parallel = scatter_to_tensor_model_parallel_region(input_)
-          # Matrix multiply.
-          output_parallel = F.linear(input_parallel, self.weight)
-          # All-reduce across all the partitions.
-          output_ = reduce_from_tensor_model_parallel_region(output_parallel)
-          if not self.skip_bias_add:
-              output = output_ + self.bias if self.bias is not None else output_
-              output_bias = None
-          else:
-              output = output_
-              output_bias = self.bias
-          return output, output_bias
+      # Set up backprop all-reduce.
+      if self.input_is_parallel:
+          input_parallel = input_
+      else:
+          input_parallel = scatter_to_tensor_model_parallel_region(input_)
+      # Matrix multiply.
+      output_parallel = F.linear(input_parallel, self.weight)
+      # All-reduce across all the partitions.
+      output_ = reduce_from_tensor_model_parallel_region(output_parallel)
+      if not self.skip_bias_add:
+          output = output_ + self.bias if self.bias is not None else output_
+          output_bias = None
+      else:
+          output = output_
+          output_bias = self.bias
+      return output, output_bias
   ```
 
 **- MP 4 Embedding**
@@ -141,26 +141,26 @@ render_with_liquid: false
   
   ```python
   def forward(self, input_):
-          if self.tensor_model_parallel_size > 1:
-              # Build the mask.
-              input_mask = (input_ < self.vocab_start_index) | \
-                           (input_ >= self.vocab_end_index)
-              # Mask the input.
-              masked_input = input_.clone() - self.vocab_start_index
-              masked_input[input_mask] = 0
-          else:
-              masked_input = input_
-              # Get the embeddings.
-          output_parallel = F.embedding(masked_input, self.weight,
-                                        self.padding_idx, self.max_norm,
-                                        self.norm_type, self.scale_grad_by_freq,
-                                        self.sparse)
-          # Mask the output embedding.
-          if self.tensor_model_parallel_size > 1:
-              output_parallel[input_mask, :] = 0.0
-          # Reduce across all the model parallel GPUs.
-          output = reduce_from_tensor_model_parallel_region(output_parallel)
-          return output
+      if self.tensor_model_parallel_size > 1:
+          # Build the mask.
+          input_mask = (input_ < self.vocab_start_index) | \
+                        (input_ >= self.vocab_end_index)
+          # Mask the input.
+          masked_input = input_.clone() - self.vocab_start_index
+          masked_input[input_mask] = 0
+      else:
+          masked_input = input_
+          # Get the embeddings.
+      output_parallel = F.embedding(masked_input, self.weight,
+                                    self.padding_idx, self.max_norm,
+                                    self.norm_type, self.scale_grad_by_freq,
+                                    self.sparse)
+      # Mask the output embedding.
+      if self.tensor_model_parallel_size > 1:
+          output_parallel[input_mask, :] = 0.0
+      # Reduce across all the model parallel GPUs.
+      output = reduce_from_tensor_model_parallel_region(output_parallel)
+      return output
   ```
 
 #### **讨论：**
